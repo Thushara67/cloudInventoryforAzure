@@ -39,7 +39,7 @@ func GetallVMS(subscriptionID string)([]*compute.VirtualMachine,error){
 	return Vmlist,nil
 
 }
-
+//Returns resourcegroup to which the virtual machine belongs to
 func GetVMResourcegroup(vm *compute.VirtualMachine)(string,error){
 	   var resourceGroup string
 	   if vm.ID !=nil{
@@ -50,7 +50,7 @@ func GetVMResourcegroup(vm *compute.VirtualMachine)(string,error){
 			 return resourceGroup,errors.New("No resourceGroup")
 	   }	 
 }
-
+//Returns the virtual machine's name
 func GetVMname(vm *compute.VirtualMachine)(string,error){
 	var Name string
 	if vm.ID !=nil{
@@ -61,7 +61,7 @@ func GetVMname(vm *compute.VirtualMachine)(string,error){
 		  return Name,errors.New("No vm name")
 	}	 
 }
-
+//Returns the subscription ID
 func GetVMSubscription(vm *compute.VirtualMachine)(string,error){
 	var subscription string
 	if vm.ID !=nil{
@@ -72,7 +72,7 @@ func GetVMSubscription(vm *compute.VirtualMachine)(string,error){
 		  return subscription,errors.New("No subscription")
 	}	 
 }
-// edit this
+//Returns the tags related to the virtual machine
 func GetVMTags(vm *compute.VirtualMachine)(map[string]*string,error){
 	var tags map[string]*string
 	if vm.Tags !=nil{
@@ -83,7 +83,7 @@ func GetVMTags(vm *compute.VirtualMachine)(map[string]*string,error){
 		  return tags,errors.New("no tags present for the vm")
 	}	 
 }
-
+//Returns the Location 
 func GetVMLocation(vm *compute.VirtualMachine)(string,error){
 	var location string
 	if vm.Location !=nil{
@@ -100,7 +100,7 @@ func GetVMSize(vm *compute.VirtualMachine)(compute.VirtualMachineSizeTypes){
 		return Vmsize
 	 
 }
-
+//Returns the OStype used in th virtual machine
 func GetVMOsType(vm *compute.VirtualMachine)(compute.OperatingSystemTypes){
 	
 		VmOS:= vm.VirtualMachineProperties.StorageProfile.OsDisk.OsType
@@ -120,7 +120,7 @@ func GetVmnetworkinterface(vm *compute.VirtualMachine)(string,error){
 	netwinterface := ID[8]
 	return netwinterface,nil
 }
-
+//Returns the publicIPname 
 func GetPublicIPname(subscriptionID string,resourceGroup string,networkinterface string)(string,error){
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
@@ -144,6 +144,7 @@ func GetPublicIPname(subscriptionID string,resourceGroup string,networkinterface
 		return PublicIPname , errors.New("Vm has no PublicIPname")
 	}
 }
+//Returns the publicIPAddress of the virtual machine
 func GetPublicIpaddress(subscriptionID string,resourceGroup string,PublicIPname string)(string,error){
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
@@ -167,7 +168,7 @@ func GetPublicIpaddress(subscriptionID string,resourceGroup string,PublicIPname 
 
 	}
 }
-
+//Returns the virtual network and subnet
 func GetSubnetandvirtualnetwork(subscriptionID string,resourceGroup string,networkinterface string)(string,error){
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
