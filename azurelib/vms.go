@@ -43,6 +43,45 @@ func AuthorizeClients (c Clients) Clients{
 	return c
 }
 
+//Get Private IP Address of a Virtual Machine
+func GetPrivateIP (vmInterface network.InterfacesClient, ctx context.Context, 
+	resourceGroup string, networkInterface string, expand string) (PrivateIPAddress string, 
+	IPConfiguration string, err error) {
+	interfaces,err:= vmInterface.Get(ctx,resourceGroup,networkInterface,expand)
+	if err != nil {
+		return 
+	}
+	interfaceinfo :=*interfaces.InterfacePropertiesFormat.IPConfigurations
+	interfID := *interfaceinfo[0].InterfaceIPConfigurationPropertiesFormat
+	//fmt.Println("IP configuration :",*interfaceinfo[0].Name)
+	IPConfiguration = *interfaceinfo[0].Name
+	if interfID.PrivateIPAddress!=nil {
+	//fmt.Println("PrivateIpaddress :",*interfID.PrivateIPAddress)
+		PrivateIPAddress = *interfID.PrivateIPAddress
+	}
+	return
+}
+
+//Get Public IP Address ID (PublicIPName)
+func GetPublicIPAddressID (vmInterface network.InterfacesClient, 
+	ctx context.Context, resourceGroup string, networkInterface string, 
+	expand string) (PublicIPAddressID string, err error) {
+	interfaces,err:= vmInterface.Get(ctx,resourceGroup,networkInterface,expand)
+	if err != nil {
+		return 
+	}
+	interfaceinfo :=*interfaces.InterfacePropertiesFormat.IPConfigurations
+	interfID := *interfaceinfo[0].InterfaceIPConfigurationPropertiesFormat
+	
+	if interfID.PublicIPAddress!=nil&&interfID.PublicIPAddress.ID!=nil {
+		ID:=strings.Split(*interfID.PublicIPAddress.ID,"/")
+		//fmt.Println("PublicIPAddress ID : ",ID[8])
+		PublicIPAddressID = ID[8]		
+	}
+	return
+}
+
+
 func GetallVMS(subscriptionID string)([]*compute.VirtualMachine,error){
 
     authorizer, err := auth.NewAuthorizerFromEnvironment()
@@ -153,30 +192,7 @@ func GetVmnetworkinterface(vm *compute.VirtualMachine)(string,error){
 	netwinterface := ID[8]
 	return netwinterface,nil
 }
-//Returns the publicIPname 
-func GetPublicIPname(subscriptionID string,resourceGroup string,networkinterface string)(string,error){
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		panic(err)
-	}
-	PublicIPname:=""
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
-	vmInterface := network.NewInterfacesClient(subscriptionID)
-	vmInterface.Authorizer = authorizer
-	interfaces,err:= vmInterface.Get(ctx,resourceGroup,networkinterface,"")
-	if err != nil {
-		panic(err)
-	}
-	interfaceinfo :=*interfaces.InterfacePropertiesFormat.IPConfigurations
-	interfID := *interfaceinfo[0].InterfaceIPConfigurationPropertiesFormat
-	if interfID.PublicIPAddress!=nil&&interfID.PublicIPAddress.ID!=nil {
-	    ID:=strings.Split(*interfID.PublicIPAddress.ID,"/")
-		return ID[8],nil
-	}else{
-		return PublicIPname , errors.New("Vm has no PublicIPname")
-	}
-}
+
 //Returns the publicIPAddress of the virtual machine
 func GetPublicIpaddress(subscriptionID string,resourceGroup string,PublicIPname string)(string,error){
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
