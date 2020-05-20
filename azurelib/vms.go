@@ -193,30 +193,20 @@ func GetVmnetworkinterface(vm *compute.VirtualMachine)(string,error){
 	return netwinterface,nil
 }
 
-//Returns the publicIPAddress of the virtual machine
-func GetPublicIpaddress(subscriptionID string,resourceGroup string,PublicIPname string)(string,error){
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
+//Returns the PublicIPAddress of the virtual machine
+func GetPublicIPAddress(vmPublicIP network.PublicIPAddressesClient, ctx context.Context,
+	resourceGroup string, PublicIPname string, expand string) (PublicIPAddress string, err error) {
+	VmIP,err := vmPublicIP.Get(ctx, resourceGroup, PublicIPname, expand)
 	if err != nil {
-		panic(err)
-	}
-	PublicIPaddress:=""
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
-	vmPublicIP:=network.NewPublicIPAddressesClient(subscriptionID)
-	vmPublicIP.Authorizer = authorizer
-	VmIP,err := vmPublicIP.Get(ctx,resourceGroup,PublicIPname,"")
-	if err != nil {
-		panic(err)
+		return
 	}
 	if VmIP.PublicIPAddressPropertiesFormat!=nil && VmIP.PublicIPAddressPropertiesFormat.IPAddress!=nil{
 		PublicIPAddress:=*VmIP.PublicIPAddressPropertiesFormat.IPAddress
 	    return PublicIPAddress,nil
-	}else{
-					
-		return PublicIPaddress,errors.New("Vm has no PublicIPaddress")
-
 	}
+	return
 }
+
 //Returns the virtual network and subnet
 func GetSubnetandvirtualnetwork(subscriptionID string,resourceGroup string,networkinterface string)(string,error){
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
