@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Azure/lib/azurelib"
+	"github.com/Thushara67/cloudInventoryforAzure/azurelib"
 	"fmt"
 )
 
