@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/Thushara67/cloudInventoryforAzure/azurelib"
 	"fmt"
+	"time"
+	"context"
 )
 
 const subscriptionID = "282160c0-3c83-43f1-bff1-9356b1678ffb"
@@ -12,6 +14,10 @@ func main(){
 	if err != nil {
 		panic(err)
 	}
+	clients  := azurelib.GetNewClients(subscriptionID)
+	clients  =  azurelib.AuthorizeClients(clients)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
 	for i:=0;i<len(s);i++{
 		fmt.Println(" ")
 		fmt.Println("vm no",i)
@@ -58,26 +64,46 @@ func main(){
 		networkinterface,err := azurelib.GetVmnetworkinterface(s[i])
 		if err!=nil{
 			fmt.Println("networkinterface : -")
+			fmt.Println("IPConfiguration : -")
+			fmt.Println("privateIPaddress : -")
 			fmt.Println("publicIPname : -")
 			fmt.Println("publicIPaddress : -")
 			fmt.Println("virtualnetwork/subnet : -")
+			fmt.Println("DNS : -")
+			
 		}else{ 
 		   fmt.Println("networkinterface :",networkinterface)
-		   publicipname,err:=azurelib.GetPublicIPname(subscriptionID,resourceGroup,
-			networkinterface)
+		   privateipaddress,IPConfiguration,err:= azurelib.GetPrivateIP(clients.VmInterface, 
+			ctx, resourceGroup, networkinterface, 
+			"")
+			if err!=nil{
+				fmt.Println("privateIPaddress : -")
+				fmt.Println("IPConfiguration :",IPConfiguration)
+			}else{
+				fmt.Println("privateIPaddress :",privateipaddress)
+				fmt.Println("IPConfiguration :",IPConfiguration)
+			}
+		   publicIPname,err:=azurelib. GetPublicIPAddressID(clients.VmInterface,ctx, resourceGroup, networkinterface,"")
 		   if err!=nil{
 			 fmt.Println("publicIPname : -")
 			 fmt.Println("publicIPaddress : -")
+			 fmt.Println("DNS : -")
 		   }else{
-			 fmt.Println("publicIPname :",publicipname)
-			 publicipaddress,err := azurelib.GetPublicIpaddress(subscriptionID,resourceGroup,publicipname)
+			 fmt.Println("publicIPname :",publicIPname)
+			 publicipaddress,err := azurelib.GetPublicIPAddress(clients.VmPublicIP,ctx,resourceGroup, publicIPname ,"")
 			 if err!=nil{
 				fmt.Println("publicIPaddress: -")
 			 }else{
 				fmt.Println("publicIPaddress :",publicipaddress)
 			 }
+			 DNS,err := azurelib.GetDNS(clients.VmPublicIP,ctx,resourceGroup, publicIPname ,"")
+			 if err!=nil{
+				fmt.Println("DNS: -")
+			 }else{
+				fmt.Println("DNS :",DNS)
+			 }
 		   }
-		   virtualnet,err:=azurelib.GetSubnetandvirtualnetwork(subscriptionID,resourceGroup,networkinterface)
+		   virtualnet,err:=azurelib.GetSubnetandvirtualnetwork(clients.VmInterface,ctx,resourceGroup,networkinterface,"")
 		   if err!=nil{
 			fmt.Println("virtualnetwork/subnet : -")
 		   }else{
