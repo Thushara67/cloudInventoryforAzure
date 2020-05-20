@@ -10,6 +10,39 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 )
 
+//A struct that contains all the necessary clients
+type Clients struct {
+	//Network Interface Client
+	vmInterface  network.InterfacesClient
+	//Public IP Addresses Client
+	vmPublicIP network.PublicIPAddressesClient
+	//Virtual Machine Client
+	vmClient compute.VirtualMachinesClient
+}
+
+//Returns a New Client 
+//Parameters - subscriptionID : Subscription ID for Azure
+func GetNewClients (subscriptionID string) Clients {
+	vmInterface := network.NewInterfacesClient(subscriptionID)
+	vmPublicIP:=network.NewPublicIPAddressesClient(subscriptionID)
+	vmClient := compute.NewVirtualMachinesClient(subscriptionID)
+	
+	c := Clients{vmInterface, vmPublicIP, vmClient}
+	return c
+}
+
+//Authorizes all the clients
+func AuthorizeClients (c Clients) Clients{
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	if err != nil {
+		panic(err)
+	}
+	c.vmClient.Authorizer = authorizer
+	c.vmPublicIP.Authorizer = authorizer
+	c.vmInterface.Authorizer = authorizer	
+	return c
+}
+
 func GetallVMS(subscriptionID string)([]*compute.VirtualMachine,error){
 
     authorizer, err := auth.NewAuthorizerFromEnvironment()
