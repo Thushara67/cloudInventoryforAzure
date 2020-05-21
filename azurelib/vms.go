@@ -84,17 +84,7 @@ func GetPublicIPAddressID (vmInterface network.InterfacesClient,
 }
 
 
-func GetallVMS(subscriptionID string)([]*compute.VirtualMachine,error){
-
-    authorizer, err := auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		panic(err)
-	}
-
-	vmClient := compute.NewVirtualMachinesClient(subscriptionID)
-	vmClient.Authorizer = authorizer
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
+func GetallVMS(vmClient compute.VirtualMachinesClient, ctx context.Context)([]*compute.VirtualMachine,error){
 
 	results, err := vmClient.ListAllComplete(ctx)
 	if err != nil {
@@ -109,10 +99,9 @@ func GetallVMS(subscriptionID string)([]*compute.VirtualMachine,error){
 		}
 		
 	}
-
 	return Vmlist,nil
-
 }
+
 //Returns resourcegroup to which the virtual machine belongs to
 func GetVMResourcegroup(vm *compute.VirtualMachine)(resourceGroup string,err error){
 	   
