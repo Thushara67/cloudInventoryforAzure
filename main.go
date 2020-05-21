@@ -10,14 +10,16 @@ import (
 const subscriptionID = "282160c0-3c83-43f1-bff1-9356b1678ffb"
 
 func main(){
-	s,err:=azurelib.GetallVMS(subscriptionID)
-	if err != nil {
-		panic(err)
-	}
 	clients  := azurelib.GetNewClients(subscriptionID)
 	clients  =  azurelib.AuthorizeClients(clients)
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
+	
+	s,err:=azurelib.GetallVMS(clients.VmClient, ctx)
+	if err != nil {
+		panic(err)
+	}
+	
 	for i:=0;i<len(s);i++{
 		fmt.Println(" ")
 		fmt.Println("vm no",i)
