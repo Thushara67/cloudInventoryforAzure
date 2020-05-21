@@ -43,9 +43,10 @@ func AuthorizeClients (c Clients) Clients{
 }
 
 //Get Private IP Address of a Virtual Machine
-func GetPrivateIP (vmInterface network.InterfacesClient, ctx context.Context, 
+func GetPrivateIP ( client Clients, ctx context.Context, 
 	resourceGroup string, networkInterface string, expand string) (PrivateIPAddress string, 
 	IPConfiguration string, err error) {
+	vmInterface := client.VmInterface
 	interfaces,err:= vmInterface.Get(ctx,resourceGroup,networkInterface,expand)
 	if err != nil {
 		return 
@@ -62,9 +63,10 @@ func GetPrivateIP (vmInterface network.InterfacesClient, ctx context.Context,
 }
 
 //Get Public IP Address ID (PublicIPName)
-func GetPublicIPAddressID (vmInterface network.InterfacesClient, 
+func GetPublicIPAddressID ( client Clients, 
 	ctx context.Context, resourceGroup string, networkInterface string, 
 	expand string) (PublicIPAddressID string, err error) {
+	vmInterface := client.VmInterface
 	interfaces,err:= vmInterface.Get(ctx,resourceGroup,networkInterface,expand)
 	if err != nil {
 		return 
@@ -83,8 +85,8 @@ func GetPublicIPAddressID (vmInterface network.InterfacesClient,
 }
 
 
-func GetallVMS(vmClient compute.VirtualMachinesClient, ctx context.Context)(Vmlist []*compute.VirtualMachine,err error){
-
+func GetallVMS( client Clients, ctx context.Context)(Vmlist []*compute.VirtualMachine,err error){
+	vmClient := client.VmClient
 	results, err := vmClient.ListAllComplete(ctx)
 	if err != nil {
 		return
@@ -198,42 +200,45 @@ func GetVmnetworkinterface(vm *compute.VirtualMachine)(networkInterface string,e
 }
 
 //Returns the PublicIPAddress of the virtual machine
-func GetPublicIPAddress(vmPublicIP network.PublicIPAddressesClient, ctx context.Context,
+func GetPublicIPAddress( client Clients, ctx context.Context,
  resourceGroup string, PublicIPname string, expand string) (PublicIPAddress string, err error) {
- VmIP,err := vmPublicIP.Get(ctx, resourceGroup, PublicIPname, expand)
- if err != nil {
-	 return
- }
- if VmIP.PublicIPAddressPropertiesFormat!=nil && VmIP.PublicIPAddressPropertiesFormat.IPAddress!=nil{
-	 PublicIPAddress = *VmIP.PublicIPAddressPropertiesFormat.IPAddress
-	 
- }else{
-	 err = errors.New("Vm has no publicIPAddress")
- }
- return 
- 
+	vmPublicIP := client.VmPublicIP
+	 VmIP,err := vmPublicIP.Get(ctx, resourceGroup, PublicIPname, expand)
+	 if err != nil {
+		 return
+	 }
+	 if VmIP.PublicIPAddressPropertiesFormat!=nil && VmIP.PublicIPAddressPropertiesFormat.IPAddress!=nil{
+		 PublicIPAddress = *VmIP.PublicIPAddressPropertiesFormat.IPAddress
+
+	 }else{
+		 err = errors.New("Vm has no publicIPAddress")
+	 }
+	 return 
+
 }
 
 //Returns the virtual network and subnet
-func GetSubnetandvirtualnetwork(vmInterface network.InterfacesClient, 
+func GetSubnetandvirtualnetwork( client Clients, 
  ctx context.Context,resourceGroup string,networkinterface string,expand string)(virtualnetworkandsubnet string,err error){
- interfaces,err:= vmInterface.Get(ctx,resourceGroup,networkinterface,expand)
- if err != nil {
+	 vmInterface := client.VmInterface
+	 interfaces,err:= vmInterface.Get(ctx,resourceGroup,networkinterface,expand)
+	 if err != nil {
+		 return
+	 }
+	 interfaceinfo :=*interfaces.InterfacePropertiesFormat.IPConfigurations
+	 interfID := *interfaceinfo[0].InterfaceIPConfigurationPropertiesFormat
+	 if interfID.Subnet!=nil {
+		 ID := strings.Split(*interfID.Subnet.ID,"/")
+		 virtualnetworkandsubnet =  ID[8]+"/"+ID[10]
+	 }else{
+		 err = errors.New("Vm has no virtual network and subnet")
+	 }
 	 return
- }
- interfaceinfo :=*interfaces.InterfacePropertiesFormat.IPConfigurations
- interfID := *interfaceinfo[0].InterfaceIPConfigurationPropertiesFormat
- if interfID.Subnet!=nil {
-	 ID := strings.Split(*interfID.Subnet.ID,"/")
-	 virtualnetworkandsubnet =  ID[8]+"/"+ID[10]
- }else{
-	 err = errors.New("Vm has no virtual network and subnet")
- }
- return
 }
 
-func GetDNS(vmPublicIP network.PublicIPAddressesClient, ctx context.Context,
- resourceGroup string, PublicIPname string, expand string)(Fqdn string,err error) {	
+func GetDNS( client Clients, ctx context.Context,
+ resourceGroup string, PublicIPname string, expand string)(Fqdn string,err error) {
+	vmPublicIP := client.VmPublicIP
  VmIP,err := vmPublicIP.Get(ctx,resourceGroup, PublicIPname,expand)
  if err != nil {
 	 return
