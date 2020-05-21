@@ -2,7 +2,6 @@ package azurelib
 
 import (
 	"context"
-	"time"
 	"strings"
 	"errors"
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
@@ -84,22 +83,22 @@ func GetPublicIPAddressID (vmInterface network.InterfacesClient,
 }
 
 
-func GetallVMS(vmClient compute.VirtualMachinesClient, ctx context.Context)([]*compute.VirtualMachine,error){
+func GetallVMS(vmClient compute.VirtualMachinesClient, ctx context.Context)(Vmlist []*compute.VirtualMachine,err error){
 
 	results, err := vmClient.ListAllComplete(ctx)
 	if err != nil {
-		panic(err)
+		return
 	}
-	var Vmlist []*compute.VirtualMachine
+
     for results.NotDone(){
 		vm := results.Value()
 		Vmlist = append(Vmlist,&vm)
-        if err := results.Next(); err != nil {
-			panic(err)
+        if err = results.Next(); err != nil {
+			return
 		}
 		
 	}
-	return Vmlist,nil
+	return 
 }
 
 //Returns resourcegroup to which the virtual machine belongs to
