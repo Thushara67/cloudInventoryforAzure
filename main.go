@@ -15,7 +15,7 @@ func main(){
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 	
-	s,err:=azurelib.GetallVMS(clients.VmClient, ctx)
+	s,err:=azurelib.GetallVMS(clients, ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -75,7 +75,7 @@ func main(){
 			
 		}else{ 
 		   fmt.Println("networkinterface :",networkinterface)
-		   privateipaddress,IPConfiguration,err:= azurelib.GetPrivateIP(clients.VmInterface, 
+		   privateipaddress,IPConfiguration,err:= azurelib.GetPrivateIP(clients, 
 			ctx, resourceGroup, networkinterface, 
 			"")
 			if err!=nil{
@@ -85,27 +85,27 @@ func main(){
 				fmt.Println("privateIPaddress :",privateipaddress)
 				fmt.Println("IPConfiguration :",IPConfiguration)
 			}
-		   publicIPname,err:=azurelib. GetPublicIPAddressID(clients.VmInterface,ctx, resourceGroup, networkinterface,"")
+		   publicIPname,err:=azurelib. GetPublicIPAddressID(clients,ctx, resourceGroup, networkinterface,"")
 		   if err!=nil{
 			 fmt.Println("publicIPname : -")
 			 fmt.Println("publicIPaddress : -")
 			 fmt.Println("DNS : -")
 		   }else{
 			 fmt.Println("publicIPname :",publicIPname)
-			 publicipaddress,err := azurelib.GetPublicIPAddress(clients.VmPublicIP,ctx,resourceGroup, publicIPname ,"")
+			 publicipaddress,err := azurelib.GetPublicIPAddress(clients,ctx,resourceGroup, publicIPname ,"")
 			 if err!=nil{
 				fmt.Println("publicIPaddress: -")
 			 }else{
 				fmt.Println("publicIPaddress :",publicipaddress)
 			 }
-			 DNS,err := azurelib.GetDNS(clients.VmPublicIP,ctx,resourceGroup, publicIPname ,"")
+			 DNS,err := azurelib.GetDNS(clients,ctx,resourceGroup, publicIPname ,"")
 			 if err!=nil{
 				fmt.Println("DNS: -")
 			 }else{
 				fmt.Println("DNS :",DNS)
 			 }
 		   }
-		   virtualnet,err:=azurelib.GetSubnetandvirtualnetwork(clients.VmInterface,ctx,resourceGroup,networkinterface,"")
+		   virtualnet,err:=azurelib.GetSubnetandvirtualnetwork(clients,ctx,resourceGroup,networkinterface,"")
 		   if err!=nil{
 			fmt.Println("virtualnetwork/subnet : -")
 		   }else{
