@@ -34,7 +34,7 @@ jobs:
       run: go build -v .
 
     - name: Test
-      run: go test -v .
+      run: go test ./… .
     
     - name: GolangCI-Linter
       uses: Mushus/golangci-linter@v1.1.2
