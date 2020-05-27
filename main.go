@@ -11,7 +11,10 @@ const subscriptionID = "282160c0-3c83-43f1-bff1-9356b1678ffb"
 
 func main() {
         clients := azurelib.GetNewClients(subscriptionID)
-        clients = azurelib.AuthorizeClients(clients)
+        clients,err := azurelib.AuthorizeClients(clients)
+        if err!=nil{
+                panic(err)
+        }
         ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
         defer cancel()
 
