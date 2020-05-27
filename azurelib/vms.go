@@ -31,15 +31,15 @@ func GetNewClients(subscriptionID string) Clients {
 }
 
 // AuthorizeClients function authorizes all the clients
-func AuthorizeClients(c Clients) Clients {
+func AuthorizeClients(c Clients) (Clients , error ){
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
-			panic(err)
+		return c,err
 	}
 	c.VMClient.Authorizer = authorizer
 	c.VMPublicIP.Authorizer = authorizer
 	c.VMInterface.Authorizer = authorizer
-	return c
+	return c,nil
 }
 
 //GetallVMS function returns list of virtual machines
