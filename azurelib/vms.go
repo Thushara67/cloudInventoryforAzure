@@ -26,7 +26,7 @@ type VirtualMachineinfo struct {
         PublicIpaddress     *string
         VirtualnetandSubnet *string
         Ipconfig            *string
-        Dns                 *string
+        DNS                 *string
 }
 
 //GetNewClients function returns a New Client
@@ -53,7 +53,7 @@ func AuthorizeClients(c Clients) (Clients, error) {
 }
 
 //GetallVMS function returns list of virtual machines
-func GetallVMS(client Clients, ctx context.Context) (Vmlist []*VirtualMachineinfo, err error) {
+func GetallVMS(ctx context.Context, client Clients) (Vmlist []*VirtualMachineinfo, err error) {
 
         vmClient := client.VMClient
         results, err := vmClient.ListAllComplete(ctx)
@@ -75,24 +75,24 @@ func GetallVMS(client Clients, ctx context.Context) (Vmlist []*VirtualMachineinf
                         Vmlist = append(Vmlist, &vminfo)
                         continue
                 }
-                vmprivateIPAddress, vmipconfig, errvm := GetPrivateIP(client, ctx, vmresourceGroup, vmnetworkinterface, "")
+                vmprivateIPAddress, vmipconfig, errvm := GetPrivateIP(ctx, client, vmresourceGroup, vmnetworkinterface, "")
                 if errvm == nil {
                         vminfo.PrivateIpaddress = &vmprivateIPAddress
                         vminfo.Ipconfig = &vmipconfig
                 }
 
-                vmvirtualnetandsubnet, errvm := GetSubnetandvirtualnetwork(client, ctx, vmresourceGroup, vmnetworkinterface, "")
+                vmvirtualnetandsubnet, errvm := GetSubnetandvirtualnetwork(ctx, client, vmresourceGroup, vmnetworkinterface, "")
                 if errvm == nil {
                         vminfo.VirtualnetandSubnet = &vmvirtualnetandsubnet
                 }
-                vmdns, errvm := GetDNS(client, ctx, vmresourceGroup, vmnetworkinterface, "")
+                vmdns, errvm := GetDNS(ctx, client, vmresourceGroup, vmnetworkinterface, "")
                 if errvm == nil {
-                        vminfo.Dns = &vmdns
+                        vminfo.DNS = &vmdns
                 }
-                vmpublicIpname, errvm := GetPublicIPAddressID(client, ctx, vmresourceGroup, vmnetworkinterface, "")
+                vmpublicIpname, errvm := GetPublicIPAddressID(ctx, client, vmresourceGroup, vmnetworkinterface, "")
                 if errvm == nil {
                         vminfo.PublicIpname = &vmpublicIpname
-                        vmpublicIpaddress, errvm := GetPublicIPAddress(client, ctx, vmresourceGroup, vmpublicIpname, "")
+                        vmpublicIpaddress, errvm := GetPublicIPAddress(ctx, client, vmresourceGroup, vmpublicIpname, "")
                         if errvm == nil {
                                 vminfo.PublicIpaddress = &vmpublicIpaddress
 
@@ -213,7 +213,7 @@ func GetVmnetworkinterface(vm *compute.VirtualMachine) (networkInterface string,
 }
 
 //GetPrivateIP function returns Private IP Address of a Virtual Machine
-func GetPrivateIP(client Clients, ctx context.Context,
+func GetPrivateIP(ctx context.Context, client Clients,
         resourceGroup string, networkInterface string, expand string) (PrivateIPAddress string,
         IPConfiguration string, err error) {
         vmInterface := client.VMInterface
@@ -231,8 +231,8 @@ func GetPrivateIP(client Clients, ctx context.Context,
 }
 
 //GetPublicIPAddressID function returns Public IP Address ID (PublicIPName)
-func GetPublicIPAddressID(client Clients,
-        ctx context.Context, resourceGroup string, networkInterface string,
+func GetPublicIPAddressID(ctx context.Context,
+        client Clients, resourceGroup string, networkInterface string,
         expand string) (PublicIPAddressID string, err error) {
         vmInterface := client.VMInterface
         interfaces, err := vmInterface.Get(ctx, resourceGroup, networkInterface, expand)
@@ -252,7 +252,7 @@ func GetPublicIPAddressID(client Clients,
 }
 
 //GetPublicIPAddress function returns the PublicIPAddress of the virtual machine
-func GetPublicIPAddress(client Clients, ctx context.Context,
+func GetPublicIPAddress(ctx context.Context, client Clients,
         resourceGroup string, PublicIPname string, expand string) (PublicIPAddress string, err error) {
         vmPublicIP := client.VMPublicIP
         VMIP, err := vmPublicIP.Get(ctx, resourceGroup, PublicIPname, expand)
@@ -270,8 +270,8 @@ func GetPublicIPAddress(client Clients, ctx context.Context,
 }
 
 //GetSubnetandvirtualnetwork function returns the virtual network and subnet
-func GetSubnetandvirtualnetwork(client Clients,
-        ctx context.Context, resourceGroup string, networkinterface string, expand string) (virtualnetworkandsubnet string, err error) {
+func GetSubnetandvirtualnetwork(ctx context.Context,
+        client Clients, resourceGroup string, networkinterface string, expand string) (virtualnetworkandsubnet string, err error) {
         vmInterface := client.VMInterface
         interfaces, err := vmInterface.Get(ctx, resourceGroup, networkinterface, expand)
         if err != nil {
@@ -289,7 +289,7 @@ func GetSubnetandvirtualnetwork(client Clients,
 }
 
 //GetDNS function returns  DNS's Fqdn
-func GetDNS(client Clients, ctx context.Context,
+func GetDNS(ctx context.Context, client Clients,
         resourceGroup string, PublicIPname string, expand string) (Fqdn string, err error) {
         vmPublicIP := client.VMPublicIP
         VMIP, err := vmPublicIP.Get(ctx, resourceGroup, PublicIPname, expand)
