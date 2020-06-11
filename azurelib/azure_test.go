@@ -33,7 +33,7 @@ func TestGetallVMS(t *testing.T) {
                         t.Errorf("Failed to get virtual machines for subscription: %s because %v", key, err)
                 }
 
-                Vmlist, err := GetallVMS(client, ctx)
+                Vmlist, err := GetallVMS(ctx, client)
                 if err != nil {
                         t.Errorf("Failed to get virtual machines for subscription: %s because %v", key, err)
                 }
