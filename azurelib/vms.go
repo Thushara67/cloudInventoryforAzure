@@ -7,6 +7,8 @@ import (
         "github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
         "github.com/Azure/go-autorest/autorest/azure/auth"
         "strings"
+        "sync"
+        "time"
 )
 
 //Clients is a struct that contains all the necessary clients
@@ -18,6 +20,7 @@ type Clients struct {
         //Virtual Machine Client
         VMClient compute.VirtualMachinesClient
 }
+
 //VirtualMachineinfo is a  struct  that contains information related to a virtual machine
 type VirtualMachineinfo struct {
         VM                  *compute.VirtualMachine
@@ -52,58 +55,78 @@ func AuthorizeClients(c Clients) (Clients, error) {
         return c, nil
 }
 
-//GetallVMS function returns list of virtual machines
-func GetallVMS(ctx context.Context, client Clients) (Vmlist []*VirtualMachineinfo, err error) {
+func getVMDetails(ctx context.Context, client Clients, vm compute.VirtualMachine) VirtualMachineinfo {
+        var vminfo VirtualMachineinfo
+        vminfo.VM = &vm
+        vmresourceGroup, errvm := GetVMResourcegroup(&vm)
+        if errvm != nil {
+                return vminfo
+        }
+        vmnetworkinterface, errvm := GetVmnetworkinterface(&vm)
+        if errvm != nil {
+                return vminfo
+        }
+        vmprivateIPAddress, vmipconfig, errvm := GetPrivateIP(ctx, client, vmresourceGroup, vmnetworkinterface, "")
+        if errvm == nil {
+                vminfo.PrivateIpaddress = &vmprivateIPAddress
+                vminfo.Ipconfig = &vmipconfig
+        }
+        vmvirtualnetandsubnet, errvm := GetSubnetandvirtualnetwork(ctx, client, vmresourceGroup, vmnetworkinterface, "")
+        if errvm == nil {
+                vminfo.VirtualnetandSubnet = &vmvirtualnetandsubnet
+        }
+        vmdns, errvm := GetDNS(ctx, client, vmresourceGroup, vmnetworkinterface, "")
+        if errvm == nil {
+                vminfo.DNS = &vmdns
+        }
+        vmpublicIpname, errvm := GetPublicIPAddressID(ctx, client, vmresourceGroup, vmnetworkinterface, "")
+        if errvm == nil {
+                vminfo.PublicIpname = &vmpublicIpname
+                vmpublicIpaddress, errvm := GetPublicIPAddress(ctx, client, vmresourceGroup, vmpublicIpname, "")
+                if errvm == nil {
+                        vminfo.PublicIpaddress = &vmpublicIpaddress
+                }
+        }
+        return vminfo
+}
 
+//GetallVMS function returns list of virtual machines
+func GetallVMS(subscriptionID string) (Vmlist []*VirtualMachineinfo, err error) {
+
+        cl := GetNewClients(subscriptionID)
+        client, err := AuthorizeClients(cl)
+        if err != nil {
+                return nil, err
+        }
+
+        ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+        defer cancel()
         vmClient := client.VMClient
         results, err := vmClient.ListAllComplete(ctx)
         if err != nil {
-                return
+                return nil, err
         }
-        
+
+        instancesChan := make(chan VirtualMachineinfo, 1000)
+        var wg sync.WaitGroup
+
         for results.NotDone() {
-                var vminfo VirtualMachineinfo
+                wg.Add(1)
                 vm := results.Value()
-                vminfo.VM = &vm
-                vmresourceGroup, errvm := GetVMResourcegroup(&vm)
-                if errvm != nil {
-                        Vmlist = append(Vmlist, &vminfo)
-                        continue
-                }
-                vmnetworkinterface, errvm := GetVmnetworkinterface(&vm)
-                if errvm != nil {
-                        Vmlist = append(Vmlist, &vminfo)
-                        continue
-                }
-                vmprivateIPAddress, vmipconfig, errvm := GetPrivateIP(ctx, client, vmresourceGroup, vmnetworkinterface, "")
-                if errvm == nil {
-                        vminfo.PrivateIpaddress = &vmprivateIPAddress
-                        vminfo.Ipconfig = &vmipconfig
-                }
+                go func(vm compute.VirtualMachine, client Clients, ctx context.Context, instancesChan chan VirtualMachineinfo) {
+                        defer wg.Done()
+                        instancesChan <- getVMDetails(ctx, client, vm)
+                }(vm, client, ctx, instancesChan)
 
-                vmvirtualnetandsubnet, errvm := GetSubnetandvirtualnetwork(ctx, client, vmresourceGroup, vmnetworkinterface, "")
-                if errvm == nil {
-                        vminfo.VirtualnetandSubnet = &vmvirtualnetandsubnet
-                }
-                vmdns, errvm := GetDNS(ctx, client, vmresourceGroup, vmnetworkinterface, "")
-                if errvm == nil {
-                        vminfo.DNS = &vmdns
-                }
-                vmpublicIpname, errvm := GetPublicIPAddressID(ctx, client, vmresourceGroup, vmnetworkinterface, "")
-                if errvm == nil {
-                        vminfo.PublicIpname = &vmpublicIpname
-                        vmpublicIpaddress, errvm := GetPublicIPAddress(ctx, client, vmresourceGroup, vmpublicIpname, "")
-                        if errvm == nil {
-                                vminfo.PublicIpaddress = &vmpublicIpaddress
-
-                        }
-                }
-
-                Vmlist = append(Vmlist, &vminfo)
                 if err = results.Next(); err != nil {
                         return
                 }
+        }
+        wg.Wait()
+        close(instancesChan)
 
+        for vminfo := range instancesChan {
+                Vmlist = append(Vmlist, &vminfo)
         }
         return
 }
