@@ -55,16 +55,16 @@ func AuthorizeClients(c Clients) (Clients, error) {
         return c, nil
 }
 
-func getVMDetails(ctx context.Context, client Clients, vm compute.VirtualMachine) VirtualMachineinfo {
+func getVMDetails(ctx context.Context, client Clients, vm compute.VirtualMachine) *VirtualMachineinfo {
         var vminfo VirtualMachineinfo
         vminfo.VM = &vm
         vmresourceGroup, errvm := GetVMResourcegroup(&vm)
         if errvm != nil {
-                return vminfo
+                return &vminfo
         }
         vmnetworkinterface, errvm := GetVmnetworkinterface(&vm)
         if errvm != nil {
-                return vminfo
+                return &vminfo
         }
         vmprivateIPAddress, vmipconfig, errvm := GetPrivateIP(ctx, client, vmresourceGroup, vmnetworkinterface, "")
         if errvm == nil {
@@ -87,7 +87,7 @@ func getVMDetails(ctx context.Context, client Clients, vm compute.VirtualMachine
                         vminfo.PublicIpaddress = &vmpublicIpaddress
                 }
         }
-        return vminfo
+        return &vminfo
 }
 
 //GetallVMS function returns list of virtual machines
@@ -107,13 +107,13 @@ func GetallVMS(subscriptionID string) (Vmlist []*VirtualMachineinfo, err error) 
                 return nil, err
         }
 
-        instancesChan := make(chan VirtualMachineinfo, 1000)
+        instancesChan := make(chan *VirtualMachineinfo, 1000)
         var wg sync.WaitGroup
 
         for results.NotDone() {
                 wg.Add(1)
                 vm := results.Value()
-                go func(vm compute.VirtualMachine, client Clients, ctx context.Context, instancesChan chan VirtualMachineinfo) {
+                go func(vm compute.VirtualMachine, client Clients, ctx context.Context, instancesChan chan *VirtualMachineinfo) {
                         defer wg.Done()
                         instancesChan <- getVMDetails(ctx, client, vm)
                 }(vm, client, ctx, instancesChan)
@@ -126,7 +126,7 @@ func GetallVMS(subscriptionID string) (Vmlist []*VirtualMachineinfo, err error) 
         close(instancesChan)
 
         for vminfo := range instancesChan {
-                Vmlist = append(Vmlist, &vminfo)
+                Vmlist = append(Vmlist, vminfo)
         }
         return
 }
