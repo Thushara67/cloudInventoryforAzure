@@ -5,11 +5,12 @@ import (
         "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v3.0/sql"
         "github.com/Azure/go-autorest/autorest/azure/auth"
         "strings"
+        "sync"
         "time"
 )
 
-// GetallSQLDBs function returns list of SQL databases
-func GetallSQLDBs(subscriptionID string) (Dblist []*sql.Database, err error) {
+// GetAllSQLDBs function returns list of SQL databases for a given subscriptionID
+func GetAllSQLDBs(subscriptionID string) (DBList []*sql.Database, err error) {
         authorizer, err := auth.NewAuthorizerFromEnvironment()
         if err != nil {
                 return
@@ -24,22 +25,34 @@ func GetallSQLDBs(subscriptionID string) (Dblist []*sql.Database, err error) {
         if err != nil {
                 return
         }
+
         for server.NotDone() {
                 result := server.Value()
                 ID := strings.Split(*result.ID, "/")
                 resourceGroup := ID[4]
                 serverName := *result.Name
-                result1, err1 := dataClient.ListByServerComplete(ctx, resourceGroup, serverName)
-                err = err1
+                results, errs := dataClient.ListByServerComplete(ctx, resourceGroup, serverName)
+                err = errs
                 if err != nil {
                         return
                 }
-                for result1.NotDone() {
-                        db := result1.Value()
-                        Dblist = append(Dblist, &db)
-                        if err = result1.Next(); err != nil {
+                instancesChan := make(chan *sql.Database, 800)
+                var wg sync.WaitGroup
+                for results.NotDone() {
+                        wg.Add(1)
+                        db := results.Value()
+                        go func(instancesChan chan *sql.Database) {
+                                defer wg.Done()
+                                instancesChan <- &db
+                        }(instancesChan)
+                        if err = results.Next(); err != nil {
                                 return
                         }
+                }
+                wg.Wait()
+                close(instancesChan)
+                for Db := range instancesChan {
+                        DBList = append(DBList, Db)
                 }
                 if err = server.Next(); err != nil {
                         return
