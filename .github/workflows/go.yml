@@ -40,5 +40,9 @@ jobs:
       uses: Mushus/golangci-linter@v1.1.2
       with:
        basePath: .
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v1.3
+      with:
+        projectBaseDir: .
     
   
