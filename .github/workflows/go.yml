@@ -29,21 +29,18 @@ jobs:
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
         fi
-        
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-          file: ./coverage.xml
-          flags: tests
-          name: codecov-umbrella
-          yml: ./codecov.yml
-
-    
+         
     - name: Build
       run: go build -v .
 
     - name: Test
-      run: go test ./... 
+      run: go test  ./... -coverprofile cp.json
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+          file: ./cp.json
+
     
     - name: GolangCI-Linter
       uses: Mushus/golangci-linter@v1.1.2
