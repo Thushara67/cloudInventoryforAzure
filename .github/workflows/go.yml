@@ -29,7 +29,12 @@ jobs:
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
         fi
-
+        
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v1.3
+      with:
+        projectBaseDir: .
+    
     - name: Build
       run: go build -v .
 
@@ -40,9 +45,5 @@ jobs:
       uses: Mushus/golangci-linter@v1.1.2
       with:
        basePath: .
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-github-action@v1.3
-      with:
-        projectBaseDir: .
     
   
