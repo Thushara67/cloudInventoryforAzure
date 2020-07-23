@@ -39,46 +39,6 @@ func (col *AzureCollector) GetSubscription(ctx context.Context) error {
 
 }
 
-// CollectVMS gathers all the Virtual Machines for each subscriptionID in an account level
-func (col *AzureCollector) CollectVMS() (map[string][]*azurelib.VirtualMachineInfo, error) {
-        subscriptionsMap := make(map[string][]*azurelib.VirtualMachineInfo)
-        type subscriptionsVMS struct {
-                subscriptionName string
-                VMList           []*azurelib.VirtualMachineInfo
-        }
-
-        subscriptionsChan := make(chan subscriptionsVMS, len(col.SubscriptionMap))
-        errChan := make(chan error, len(col.SubscriptionMap))
-        var wg sync.WaitGroup
-
-        for subscriptionName, subscriptionID := range col.SubscriptionMap {
-                wg.Add(1)
-                go func(subscriptionName string, subscriptionID string, subscriptionsChan chan subscriptionsVMS, errChan chan error) {
-                        defer wg.Done()
-
-                        VMList, err := CollectVMsPerSubscriptionID(subscriptionID)
-                        if err != nil {
-                                errChan <- err
-                                return
-                        }
-                        subscriptionsChan <- subscriptionsVMS{subscriptionName, VMList}
-                }(subscriptionName, subscriptionID, subscriptionsChan, errChan)
-        }
-
-        wg.Wait()
-        close(subscriptionsChan)
-        close(errChan)
-
-        if len(errChan) > 0 {
-                return nil, fmt.Errorf(fmt.Sprintf("Failed to gather VM Data: %v", <-errChan))
-        }
-
-        for subsVMS := range subscriptionsChan {
-                subscriptionsMap[subsVMS.subscriptionName] = subsVMS.VMList
-        }
-
-        return subscriptionsMap, nil
-}
 
 // CollectSQLDBs gathers SQL databases for each subscriptionID in an account level
 func (col *AzureCollector) CollectSQLDBs() (map[string][]*sql.Database, error) {
@@ -128,17 +88,4 @@ func CollectSQLDBsPerSubscriptionID(subscriptionID string) ([]*sql.Database, err
 
         dblist, err := azurelib.GetAllSQLDBs(subscriptionID)
         return dblist, err
-}
-
-// CollectVMsPerSubscriptionID returns a slice of VirtualMachineInfo for a given subscriptionID
-func CollectVMsPerSubscriptionID(subscriptionID string) ([]*azurelib.VirtualMachineInfo, error) {
-
-        var vmList []*azurelib.VirtualMachineInfo
-        client := azurelib.GetNewClients(subscriptionID)
-        err := client.AuthorizeClients()
-        if err != nil {
-                return vmList, err
-        }
-        vmList, err = azurelib.GetAllVMS(client)
-        return vmList, err
 }
